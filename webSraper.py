@@ -8,6 +8,7 @@ import csv
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from tkinter import Tk, Label, Button, Text
 
 # urlencode() decode bug,  %ACd%B8%DF => %25AC%25B8%25DF
 # work around
@@ -84,30 +85,45 @@ def clearData(data):
 def draw(df, stockNo):
     df_400 = df[df.level >= 12].groupby('date')['people'].sum()
     print(df_400)
-
+    #print(df_400.describe())
     plt.plot(df_400, label='linear')
-    plt.ylabel("people who owned above 400000 share")
-    plt.title("2330")
-    plt.savefig('2330.png')
-    plt.show()
-
     
-data = getTable(getDateList(), 2330)
-df = clearData(data)
-draw(df, 2330)
+    plt.ylabel("people who owned above 400,000 shares")
+    plt.title(stockNo)
+    plt.savefig(str(stockNo)+'.png')
+    plt.close()
+    #plt.show()
 
 
+class MyFirstGUI:
+    def __init__(self, master):
+        self.master = master
+        master.title("A simple GUI")
+
+        self.text = Text(master, cnf={}, width="30", height="1")
+        self.text.pack()
+
+        self.submit_button = Button(master, text="Submit", command=self.submit)
+        self.submit_button.pack()
+
+    def submit(self):
+        stockNo = self.text.get("1.0",'end-1c')
+        #self.text.
+            
+        data = getTable(getDateList(), stockNo)
+        df = clearData(data)
+        draw(df, stockNo)        
+        df.to_csv(str(stockNo)+'.csv', sep=',')
+
+
+root = Tk()
+my_gui = MyFirstGUI(root)
+root.mainloop()
 
 #print(df.head)
 #print(df.dtypes)
-#print(len(data)/17)
-
-#df.to_csv('temp.csv', sep=',')
 
 #export list of lists to csv
 # with open('csvfile.csv', "w") as output:
 #     writer = csv.writer(output, lineterminator='\n')  
 #     writer.writerows(data)
-
-
-

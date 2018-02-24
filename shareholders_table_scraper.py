@@ -1,35 +1,3 @@
-"""Example Google style docstrings.
-
-This module demonstrates documentation as specified by the `Google Python
-Style Guide`_. Docstrings may extend over multiple lines. Sections are created
-with a section header and a colon followed by a block of indented text.
-
-Example:
-    Examples can be given using either the ``Example`` or ``Examples``
-    sections. Sections support any reStructuredText formatting, including
-    literal blocks::
-
-        $ python example_google.py
-
-Section breaks are created by resuming unindented text. Section breaks
-are also implicitly created anytime a new section starts.
-
-Attributes:
-    module_level_variable1 (int): Module level variables may be documented in
-        either the ``Attributes`` section of the module docstring, or in an
-        inline docstring immediately following the variable.
-
-        Either form is acceptable, but the two should not be mixed. Choose
-        one convention to document module level variables and be consistent
-        with it.
-
-Todo:
-    * web scraper of http://www.tdcc.com.tw/smWeb/QryStock.jsp
-    * user enter stock number, the module will get shareholders table within a year.
-    * output a csv file within a year.
-    * output a png file for above 400,000 sharesholder changes within a year.
-
-"""
 from tkinter import Tk, Label, Button, Text
 from urllib.parse import urlencode
 import pandas as pd
@@ -38,6 +6,10 @@ matplotlib.use('WXAgg')
 import matplotlib.pyplot as plt
 import urllib3
 from bs4 import BeautifulSoup
+from PyQt5.QtWidgets import (QWidget, QPushButton, QLineEdit, 
+    QInputDialog, QApplication)
+import sys
+
 #import datetime
 #import time
 #import csv
@@ -136,70 +108,74 @@ def draw(df_shares, stock_no):
     #plt.show()
 
 
-class MyFirstGUI:
-    """The summary line for a class docstring should fit on one line.
+# class MyFirstGUI:
+#     def __init__(self, master):
+#         self.master = master
+#         master.title("shareholder table")
 
-    If the class has public attributes, they may be documented here
-    in an ``Attributes`` section and follow the same formatting as a
-    function's ``Args`` section. Alternatively, attributes may be documented
-    inline with the attribute's declaration (see __init__ method below).
+#         self.label1 = Label(master, text="Input stock number")
+#         self.label1.pack()
 
-    Properties created with the ``@property`` decorator should be documented
-    in the property's getter method.
+#         self.text = Text(master, cnf={}, width="20", height="1")
+#         self.text.pack()
 
-    Attributes:
-        attr1 (str): Description of `attr1`.
-        attr2 (:obj:`int`, optional): Description of `attr2`.
+#         self.submit_button = Button(master, text="Submit", command=self.submit)
+#         self.submit_button.pack()
 
-    """
-    def __init__(self, master):
-        """Example of docstring on the __init__ method.
+#     def submit(self):
+#         """Example of docstring on the __init__ method.
 
-        The __init__ method may be documented in either the class level
-        docstring, or as a docstring on the __init__ method itself.
+#         """
+#         # index from start to end
+#         stock_no = self.text.get("1.0",'end-1c')
+#         self.text.delete('1.0', 'end-1c')
 
-        Either form is acceptable, but the two should not be mixed. Choose one
-        convention to document the __init__ method and be consistent with it.
+#         data = get_table(get_date_list(), stock_no)
+#         df_shares = clear_data(data)
+#         draw(df_shares, stock_no)
+#         df_shares.to_csv(str(stock_no)+'.csv', sep=',')
 
-        Note:
-            Do not include the `self` parameter in the ``Args`` section.
 
-        Args:
-            param1 (str): Description of `param1`.
-            param2 (:obj:`int`, optional): Description of `param2`. Multiple
-                lines are supported.
-            param3 (:obj:`list` of :obj:`str`): Description of `param3`.
+class Example(QWidget):
+    
+    def __init__(self):
+        super().__init__()
+        
+        self.initUI()
+        
+        
+    def initUI(self):      
 
-        """
-        self.master = master
-        master.title("shareholder table")
-
-        self.label1 = Label(master, text="Input stock number")
-        self.label1.pack()
-
-        self.text = Text(master, cnf={}, width="20", height="1")
-        self.text.pack()
-
-        self.submit_button = Button(master, text="Submit", command=self.submit)
-        self.submit_button.pack()
-
-    def submit(self):
-        """Example of docstring on the __init__ method.
-
-        """
-        # index from start to end
-        stock_no = self.text.get("1.0",'end-1c')
-        self.text.delete('1.0', 'end-1c')
+        self.btn = QPushButton('Submit', self)
+        self.btn.move(160, 20)
+        self.btn.clicked.connect(self.getStockNo)
+        
+        self.le = QLineEdit(self)
+        self.le.move(20, 20)
+        
+        self.setGeometry(300, 300, 240, 60)
+        self.setWindowTitle('input stock number')
+        self.show()
+        
+        
+    def getStockNo(self):        
+        stock_no = self.le.text()
+        self.le.clear()
 
         data = get_table(get_date_list(), stock_no)
         df_shares = clear_data(data)
         draw(df_shares, stock_no)
-        df_shares.to_csv(str(stock_no)+'.csv', sep=',')
-
-
-root = Tk()
-my_gui = MyFirstGUI(root)
-root.mainloop()
+        df_shares.to_csv(str(stock_no)+'.csv', sep=',')            
+        
+        
+if __name__ == '__main__':
+    
+    app = QApplication(sys.argv)
+    ex = Example()
+    sys.exit(app.exec_())
+# root = Tk()
+# my_gui = MyFirstGUI(root)
+# root.mainloop()
 
 #print(df.head)
 #print(df.dtypes)

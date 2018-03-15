@@ -45,15 +45,18 @@ def get_stock_data(stock_symbol):
     # get rows: one row stands for one fiscal period
     fiscal_period_list = soup.find_all('th', {'class':['style4', 'style5']})
     fiscal_period_col = []
+    fisacl_period_length = len(fiscal_period_list)
+    
     for fiscal_period in fiscal_period_list[-10:]:
         fiscal_period_col.append(fiscal_period.get_text())
-        
-    expression_list = ['12$', '13$', '14$', '15$', 'yesttm$', '16$', '17$', '18$', '19$', '20$']
-    #expression_list = ["5$", "6$", "7$", "8$", "yesttm$", "9$", "10$", "11$", "12$", "13$"]
+            
+    # save last 10 items
+    i = fisacl_period_length - 9
+    expression_list = [str(i), str(i+1), str(i+2), str(i+3), 'yesttm$', str(i+4), str(i+5), str(i+6), str(i+7), str(i+8)]
 
     period_list = []
     for expression in expression_list:
-        period_list.append({'class':re.compile('[^-]'+expression)})
+        period_list.append({'class':re.compile('[^-]'+expression+'$')})
     
     for i, period in enumerate(period_list):
         div_period = soup.find_all(['div','font'], period)
@@ -83,17 +86,18 @@ def list_to_df(data):
     '''
     list_to_df
     '''
-
-    df = pd.DataFrame(data[1:], columns=data[0])    
+    df = pd.DataFrame(data[1:], columns=data[0])
 
     # remove duplicated column 
     df = df.loc[:, ~df.columns.duplicated()]
     
     # CARE: dont use df.replace(',', ''), it only find whole match string not char
     for col in df:
-        df[col] = df[col].str.replace(',', '')        
+        df[col] = df[col].str.replace(',', '')
     
     df.iloc[:,3:] = df.iloc[:,3:].apply(pd.to_numeric, errors='coerce').fillna(0)
+            
+    #print(df.dtypes)
     
     return df
 
@@ -101,9 +105,9 @@ def non_zero(x):
     #df.B.div(df.A.where(df.A != 0, np.nan))
     return x.where(x!=0, np.nan)
 
-def calculate_ratio(df):        
-    df.loc[df['Period Type']=='A', ['PE Ratio']] = df['Month End Stock Price'].div(df['Earnings per Share (Diluted)'].where(df['Earnings per Share (Diluted)'] != 0, np.nan))					
-    df['Price-to-Owner-Earnings'] = df['Month End Stock Price'].div(df['Owner Earnings per Share (TTM)'].where(df['Owner Earnings per Share (TTM)'] != 0, np.nan))
+def calculate_ratio(df):    
+    df.loc[df['Period Type']=='A', ['PE Ratio']] = df['Month End Stock Price'] / non_zero(df['Earnings per Share (Diluted)'])
+    df['Price-to-Owner-Earnings'] = df['Month End Stock Price'] / non_zero(df['Owner Earnings per Share (TTM)'])
     df['PB Ratio'] = df['Month End Stock Price'] / non_zero(df['Book Value per Share'])
     df['Price-to-Tangible-Book'] = df['Month End Stock Price'] / non_zero(df['Tangible Book per Share'])
     df['Price-to-Free-Cash-Flow'] = df['Month End Stock Price'] / non_zero(df['Free Cash Flow per Share'])
@@ -123,8 +127,15 @@ def calculate_ratio(df):
     # df['Total Assets'] =  df['Total Assets'].apply(pd.to_numeric, errors='ignore')
     
     df['Debt Ratio'] = df['Total Liabilities'] / non_zero(df['Total Assets'])
-    df['Long Term Funds To Fixed Assets'] = (df['Long-Term Debt'] + df['Total Equity']) / non_zero(df['Property, Plant and Equipment'])         
-    
+    df['Long Term Funds To Fixed Assets'] = (df['Long-Term Debt'] + df['Total Equity']) / non_zero(df['Property, Plant and Equipment'])
+    df['Current Ratio'] = df['Total Current Assets'] / non_zero(df['Total Current Liabilities'])
+    df['Quick Ratio'] = (df['Total Current Assets'] - df['Total Inventories']) / non_zero(df['Total Current Liabilities'])
+    df['Interest Coverage'] = -1 * df['Operating Income'] / non_zero(df['Interest Expense'])
+    df['Net-Net Working Capital'] = (df['Cash And Cash Equivalents'] + 0.75 * df['Accounts Receivable'] + 0.5 * df['Total Inventories'] - df['Total Liabilities'] - df['Preferred Stock']) / non_zero(df['Shares Outstanding (Diluted Average)'])
+
+    for col in df.iloc[:,3:]:    
+        df[col] = df[col].astype('float')    
+
     return df
 
 
@@ -139,13 +150,14 @@ def concat_stock(stock_symbol_list):
 
     return result
     
-stock_symbol_list = ['NAS:SAFM', 'PPC', 'TSN']
+#stock_symbol_list = ['NAS:SAFM', 'PPC', 'TSN']
 #stock_symbol_list = ['PPC']
 #stock_symbol_list = ['ANFI']
+stock_symbol_list = ['LUV', 'JBLU', 'SAVE']
 
 df = concat_stock(stock_symbol_list)
 csv_name = '_'.join(stock_symbol_list).replace(':','')
-df.to_csv('output/'+csv_name+'.csv', sep=',', float_format='%.2f')
+df.to_csv('output/'+csv_name+'.csv', float_format='%.2f')
 print(csv_name)      
         
 #export list of lists to csv

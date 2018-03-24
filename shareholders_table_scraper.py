@@ -53,7 +53,7 @@ def get_table(date_list, stock_no):
                 
         http_request = http.request('POST', url)
         if http_request.status != 200:
-            next
+            continue
         soup = BeautifulSoup(http_request.data, 'html.parser')            
         # data at second class=mt table
         table = soup.findAll("table", attrs={"class":"mt"})[1]

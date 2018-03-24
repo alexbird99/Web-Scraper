@@ -1,67 +1,62 @@
-from tkinter import Tk, Label, Button, Text
-from urllib.parse import urlencode
 import pandas as pd
-import matplotlib
-matplotlib.use('WXAgg')
 import matplotlib.pyplot as plt
 import urllib3
+from urllib.parse import urlencode
 from bs4 import BeautifulSoup
-from PyQt5.QtWidgets import (QWidget, QPushButton, QLineEdit, 
-    QInputDialog, QApplication)
+from PyQt5.QtWidgets import QWidget, QPushButton, QLineEdit, QInputDialog, QApplication
 import sys
-
-#import datetime
-#import time
-#import csv
-# work around for pyinstaller issue conuld not find the Qt platform plugin "windows" in "".
-# https://github.com/pyinstaller/pyinstaller/issues/2857
-
+import ast
 
 def get_date_list():
     """
     get_date_list
 
     """
+    
     date_list = []
-    url = 'http://www.tdcc.com.tw/smWeb/QryStock.jsp'
+    url = 'http://www.tdcc.com.tw/smWeb/QryStockAjax.do?REQ_OPR=qrySelScaDates'
 
     http = urllib3.PoolManager()
-    http_request = http.request('GET', url)
-    soup = BeautifulSoup(http_request.data, 'html.parser')
-    date_options = soup.findAll('option')
+    http_request = http.request('POST', url)
 
-    for date in date_options:
-        date_list.append(date.get_text())
+    if http_request.status == 200:
+        soup = BeautifulSoup(http_request.data, 'html.parser')
+        # convert string list to list
+        date_list = ast.literal_eval(soup.text)
+            
     return date_list
 
 
 def get_table(date_list, stock_no):
     '''
     get_table
-    '''
+    '''    
 
     http = urllib3.PoolManager()
     data = []
-    # urlencode() decode bug,  %ACd%B8%DF => %25AC%25B8%25DF
-    # work around
-    for sca_date in date_list:
 
-        encoded_args = urlencode({
-            'SCA_DATE':sca_date,
-            'SqlMethod':'StockNo',
-            'StockNo':stock_no
-            })
-        url = 'http://www.tdcc.com.tw/smWeb/QryStock.jsp?'+encoded_args+'&sub=%ACd%B8%DF'
-        #print(url)
-
-        try:
-            http_request = http.request('POST', url)
-            soup = BeautifulSoup(http_request.data, 'html.parser')
-            # data at second class=mt table
-            table = soup.findAll("table", attrs={"class":"mt"})[1]
-        except IndexError as index_error:
-            print(index_error)
-            return None
+    for sca_date in date_list:        
+        # encoded_args = urlencode({
+        #     'scaDates':sca_date,
+        #     'scaDate':sca_date,
+        #     'SqlMethod':'StockNo',
+        #     'StockNo':stock_no,
+        #     'radioStockNo':stock_no,
+        #     'StockName':'',
+        #     'REQ_QPR':'SELECT',
+        #     'clkStockNo':stock_no,
+        #     'clkStockName':''
+        #     })
+                        
+        #url = 'http://www.tdcc.com.tw/smWeb/QryStockAjax.do?scaDates=20180316&scaDate=20180316&SqlMethod=StockNo&StockNo=1234&radioStockNo=1234&StockName=&REQ_OPR=SELECT&clkStockNo=1234&clkStockName='
+        url = 'http://www.tdcc.com.tw/smWeb/QryStockAjax.do?scaDates=%s&scaDate=%s&SqlMethod=StockNo&StockNo=%s&radioStockNo=%s&StockName=&REQ_OPR=SELECT&clkStockNo=%s&clkStockName=' % (sca_date, sca_date, stock_no, stock_no, stock_no)
+                
+        http_request = http.request('POST', url)
+        if http_request.status != 200:
+            next
+        soup = BeautifulSoup(http_request.data, 'html.parser')            
+        # data at second class=mt table
+        table = soup.findAll("table", attrs={"class":"mt"})[1]
 
         table_body = table.find('tbody')
         rows = table_body.find_all('tr')
@@ -71,7 +66,7 @@ def get_table(date_list, stock_no):
             cols = [ele.text.strip() for ele in cols]
             #data.append([ele for ele in cols if ele]) # Get rid of empty values
             data.append([sca_date] + [ele for ele in cols])
-
+    
     return data
 
 def clear_data(data):
@@ -97,44 +92,12 @@ def clear_data(data):
 
 def draw(df_shares, stock_no):
     df_400 = df_shares[df_shares.level >= 12].groupby('date')['people'].sum()
-    print(df_400)
-    #print(df_400.describe())
     plt.plot(df_400, label='linear')
 
     plt.ylabel("people who owned above 400,000 shares")
     plt.title(stock_no)
     plt.savefig(str(stock_no)+'.png')
-    plt.close()
-    #plt.show()
-
-
-# class MyFirstGUI:
-#     def __init__(self, master):
-#         self.master = master
-#         master.title("shareholder table")
-
-#         self.label1 = Label(master, text="Input stock number")
-#         self.label1.pack()
-
-#         self.text = Text(master, cnf={}, width="20", height="1")
-#         self.text.pack()
-
-#         self.submit_button = Button(master, text="Submit", command=self.submit)
-#         self.submit_button.pack()
-
-#     def submit(self):
-#         """Example of docstring on the __init__ method.
-
-#         """
-#         # index from start to end
-#         stock_no = self.text.get("1.0",'end-1c')
-#         self.text.delete('1.0', 'end-1c')
-
-#         data = get_table(get_date_list(), stock_no)
-#         df_shares = clear_data(data)
-#         draw(df_shares, stock_no)
-#         df_shares.to_csv(str(stock_no)+'.csv', sep=',')
-
+    plt.close()    
 
 class Example(QWidget):
     
@@ -167,18 +130,14 @@ class Example(QWidget):
         draw(df_shares, stock_no)
         df_shares.to_csv(str(stock_no)+'.csv', sep=',')            
         
-        
-if __name__ == '__main__':
-    
+if __name__ == '__main__':        
     app = QApplication(sys.argv)
     ex = Example()
     sys.exit(app.exec_())
-# root = Tk()
-# my_gui = MyFirstGUI(root)
-# root.mainloop()
 
-#print(df.head)
-#print(df.dtypes)
+# stock_no = '1234'
+# date_list = get_date_list()
+# get_table(date_list, stock_no)
 
 #export list of lists to csv
 # with open('csvfile.csv', "w") as output:

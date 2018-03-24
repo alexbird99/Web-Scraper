@@ -153,7 +153,8 @@ def concat_stock(stock_symbol_list):
 #stock_symbol_list = ['NAS:SAFM', 'PPC', 'TSN']
 #stock_symbol_list = ['PPC']
 #stock_symbol_list = ['ANFI']
-stock_symbol_list = ['LUV', 'JBLU', 'SAVE']
+stock_symbol_list = ['LUV', 'JBLU', 'SAVE'] #SAVE has no 'Days Inventory' column, will cause error
+
 
 df = concat_stock(stock_symbol_list)
 csv_name = '_'.join(stock_symbol_list).replace(':','')

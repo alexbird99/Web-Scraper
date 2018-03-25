@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from PyQt5.QtWidgets import QWidget, QPushButton, QLineEdit, QInputDialog, QApplication
 import sys
 import ast
+import time
 
 def get_date_list():
     """
@@ -18,11 +19,20 @@ def get_date_list():
 
     http = urllib3.PoolManager()
     http_request = http.request('POST', url)
+    count = 0
 
-    if http_request.status == 200:
+    while http_request.status != 200:
+        #print(http_request.status)
+        if count > 50:
+            return []
+        time.sleep(0.1)
+        http_request = http.request('POST', url)
+        count = count + 1
+    else:
+        #print(http_request.status)
         soup = BeautifulSoup(http_request.data, 'html.parser')
         # convert string list to list
-        date_list = ast.literal_eval(soup.text)
+        date_list = ast.literal_eval(soup.text)    
             
     return date_list
 
@@ -135,9 +145,9 @@ if __name__ == '__main__':
     ex = Example()
     sys.exit(app.exec_())
 
-# stock_no = '1234'
-# date_list = get_date_list()
-# get_table(date_list, stock_no)
+#stock_no = '1234'
+#date_list = get_date_list()
+#get_table(date_list, stock_no)
 
 #export list of lists to csv
 # with open('csvfile.csv', "w") as output:

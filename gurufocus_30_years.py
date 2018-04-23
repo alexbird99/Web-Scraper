@@ -133,6 +133,12 @@ def calculate_ratio(df):
     df['Interest Coverage'] = -1 * df['Operating Income'] / non_zero(df['Interest Expense'])
     df['Net-Net Working Capital'] = (df['Cash And Cash Equivalents'] + 0.75 * df['Accounts Receivable'] + 0.5 * df['Total Inventories'] - df['Total Liabilities'] - df['Preferred Stock']) / non_zero(df['Shares Outstanding (Diluted Average)'])
 
+    # should use  Shares Outstanding (EOP)
+    df['Market Cap'] = df['Shares Outstanding (Diluted Average)'] * df['Month End Stock Price']
+    df['Enterprise Value'] = df['Market Cap'] + df['Long-Term Debt'] - df['Cash, Cash Equivalents, Marketable Securities']
+
+    df['Cash Return'] = (df['Free Cash Flow'] + df['Net Interest Income']) / non_zero(df['Enterprise Value'])
+
     for col in df.iloc[:,3:]:    
         df[col] = df[col].astype('float')    
 
@@ -151,9 +157,9 @@ def concat_stock(stock_symbol_list):
     return result
     
 #stock_symbol_list = ['NAS:SAFM', 'PPC', 'TSN']
-#stock_symbol_list = ['PPC']
-#stock_symbol_list = ['ANFI']
-stock_symbol_list = ['LUV', 'JBLU', 'SAVE'] #SAVE has no 'Days Inventory' column, will cause error
+#stock_symbol_list = ['FB'] #Inventory Turnover not exist in pages
+stock_symbol_list = ['FONR']
+#stock_symbol_list = ['LUV', 'JBLU', 'SAVE'] #SAVE has no 'Days Inventory' column, will cause error
 
 
 df = concat_stock(stock_symbol_list)
